@@ -92,8 +92,30 @@ class Feed < ApplicationRecord
     save
   end
 
-  def fetch_and_parse(rss_url)
-    xml = HTTParty.get(rss_url).body
-    Feedjira.parse(xml)
+  # def fetch_and_parse(rss_url)
+  #   xml = HTTParty.get(rss_url).body
+  #   Feedjira.parse(xml)
+  # end
+
+def fetch_and_parse(rss_url)
+  response = HTTParty.get(rss_url, headers: { "User-Agent" => "Mozilla/5.0" })
+  content_type = response.headers["content-type"]
+
+  # Accept any content type that includes "xml", "rss", or "text"
+  unless content_type&.match?(/xml|rss|text/)
+    page = MetaInspector.new(rss_url)
+    feed_url = page.feed || page.feeds.first
+    raise "No feed found on the provided homepage." unless feed_url
+    response = HTTParty.get(feed_url, headers: { "User-Agent" => "Mozilla/5.0" })
   end
+
+  begin
+    Feedjira.parse(response.body)
+  rescue => e
+    Rails.logger.error "Feed parsing error: #{e.message}"
+    raise "Feed parsing error: #{e.message}"
+  end
+end
+
+
 end

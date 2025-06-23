@@ -10,7 +10,7 @@ ruby "2.7.8"
 # Bundle edge Rails instead: gem 'rails', github: 'rails/rails'
 gem 'rails', '~> 5.2'
 # Use postgresql as the database for Active Record
-gem 'pg', '~> 1.1.4'
+gem 'pg', '~> 1.2.3'
 # Use Puma as the app server
 gem 'puma', '~> 5.6'
 
@@ -32,6 +32,10 @@ gem 'metainspector'
 
 # To generate seed data
 gem 'faker'
+
+gem 'tzinfo-data', platforms: [:mingw, :mswin, :x64_mingw]
+
+gem 'wdm', '>= 0.1.0' if Gem.win_platform?
 
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
