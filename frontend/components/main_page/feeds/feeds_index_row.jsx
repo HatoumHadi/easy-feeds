@@ -78,7 +78,7 @@ class TrashButton extends React.Component {
     return (
       <button className="modify-button feed-delete" onClick={this.triggerConfirm}>
         { this.state.confirmation ?
-          <span>"DELETE?"</span> :
+          <span>DELETE</span> :
           <i className="fa fa-trash-o" aria-hidden="true"></i>
         }
       </button>

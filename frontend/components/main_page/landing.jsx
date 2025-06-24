@@ -17,18 +17,20 @@ class Landing extends React.Component {
           <div className="contents">
             <h1>Welcome to EasyFeeds</h1>
             <p>An easy way to aggregate stories from across the web.</p>
-            <button
-              className="green-button"
-              onClick={e => this.props.history.push("/signup")}>
-              Get Started</button>
-            <button
+         <button
+  className="green-button"
+  style={{ marginTop: '40px' }} // Adjust the value as needed
+  onClick={e => this.props.history.push("/signup")}>
+  Get Started
+</button>
+            {/* <button
               className="green-button demo-user"
               onClick={this.props.createDemoUser}>
               Demo User
-            </button>
-            <div className="landing-image-container">
+            </button> */}
+            {/* <div className="landing-image-container">
               <img src="https://i.imgur.com/Exbov3T.png" />
-            </div>
+            </div> */}
           </div>
         </div>
 
