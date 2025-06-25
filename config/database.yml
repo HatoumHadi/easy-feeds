@@ -5,19 +5,19 @@ default: &default
 
 development:
   <<: *default
-  database: easyfeeds_development
+  database: easyfeeds
   username: postgres
   password: password  # or your actual password
   host: localhost
   port: 5433
 
-test:
-  <<: *default
-  database: easyfeeds_test
-  username: postgres
-  password: password  # or your actual password
-  host: localhost
-  port: 5433
+# test:
+#   <<: *default
+#   database: easyfeeds_test
+#   username: postgres
+#   password: password  # or your actual password
+#   host: localhost
+#   port: 5433
 
 production:
   <<: *default

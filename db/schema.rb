@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2017_11_22_132537) do
+ActiveRecord::Schema.define(version: 2025_06_25_074932) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -38,11 +38,13 @@ ActiveRecord::Schema.define(version: 2017_11_22_132537) do
     t.string "favicon_url", default: "", null: false
     t.string "image_url", default: "", null: false
     t.string "website_url", default: "", null: false
-    t.datetime "last_built", default: "2025-06-23 08:40:31", null: false
+    t.datetime "last_built", default: "2025-06-25 08:07:37", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "OK"
     t.integer "subscriptions_count", default: 0
+    t.text "keywords"
+    t.text "rss_feeds"
     t.index ["rss_url"], name: "index_feeds_on_rss_url", unique: true
     t.index ["title"], name: "index_feeds_on_title"
   end
