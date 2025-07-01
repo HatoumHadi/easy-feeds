@@ -1,6 +1,7 @@
 require 'feedjira'
 require 'feed_favicon_helper'
 require 'metainspector'
+require 'addressable/uri'
 
 class Feed < ApplicationRecord
   attr_accessor :populate
@@ -53,7 +54,7 @@ class Feed < ApplicationRecord
     begin
       @feedjira_feed = fetch_and_parse(rss_url)
     rescue => e
-      errors.add(:base, "This website doesn't appear to have a valid RSS feed. Try a direct feed URL.")
+      errors.add(:base, "We couldn't find an RSS feed at this URL. Try a direct feed URL or contact support if you believe this is an error.")
       Rails.logger.error "Feed validation failed for #{rss_url}: #{e.message}"
       throw :abort
     end
@@ -61,22 +62,23 @@ class Feed < ApplicationRecord
 
   def fetch_and_parse(rss_url)
     # Normalize URL
-    url = rss_url.strip
-    url = "https://#{url}" unless url.start_with?('http')
+    url = normalize_url(rss_url.strip)
 
     # Try direct parsing first
     direct_feed = try_direct_feed(url)
     return direct_feed if direct_feed
 
-    # Try known feed URLs for major sites
-    known_feed = try_known_feeds(url)
-    return known_feed if known_feed
-
     # Try to discover feeds
     discovered_feed = try_discover_feeds(url)
     return discovered_feed if discovered_feed
 
-    raise "No valid feed found at #{url}"
+    # Try some known paths for Arabic sites
+    if url.include?('aljadeed.tv')
+      arabic_feed = try_arabic_site_feeds(url)
+      return arabic_feed if arabic_feed
+    end
+
+    raise "No valid feed found at #{url}. Please provide a direct RSS feed URL."
   rescue => e
     Rails.logger.error "Feed parsing error: #{e.message}"
     raise "Could not parse feed: #{e.message}"
@@ -84,55 +86,38 @@ class Feed < ApplicationRecord
 
   private
 
+  def normalize_url(url)
+    return "http://#{url}" unless url.start_with?('http')
+    url
+  end
+
   def try_direct_feed(url)
     response = HTTParty.get(url, headers: { 
-      "User-Agent" => "Mozilla/5.0",
-      "Accept" => "application/rss+xml, application/atom+xml, application/xml, text/xml"
-    })
+      "User-Agent" => "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+      "Accept" => "application/rss+xml, application/atom+xml, application/xml, text/xml",
+      "Accept-Language" => "en-US,en;q=0.9,ar;q=0.8"
+    }, timeout: 15)
     
-    if valid_xml?(response.body)
+    if valid_feed_content?(response.body)
       parsed = Feedjira.parse(response.body)
       return parsed if parsed.respond_to?(:entries)
     end
-  rescue
+  rescue => e
+    Rails.logger.warn "Direct feed attempt failed for #{url}: #{e.message}"
     nil
   end
 
-  def try_known_feeds(url)
-    # Handle specific sites with known feed URLs
-    case url
-    when /nytimes\.com/i
-      try_nytimes_feeds(url)
-    when /cnn\.com/i
-      try_cnn_feeds(url)
-    else
-      nil
-    end
-  end
-
-  def try_nytimes_feeds(url)
-    nyt_feeds = [
-      'https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml',
-      'https://rss.nytimes.com/services/xml/rss/nyt/World.xml',
-      'https://rss.nytimes.com/services/xml/rss/nyt/US.xml'
+  def try_arabic_site_feeds(url)
+    arabic_paths = [
+      '/ar/rss.xml',
+      '/feed',
+      '/rss',
+      '/arabic/rss.xml',
+      '/ar/feed'
     ]
     
-    nyt_feeds.each do |feed_url|
-      feed = try_direct_feed(feed_url)
-      return feed if feed
-    end
-    nil
-  end
-
-  def try_cnn_feeds(url)
-    cnn_feeds = [
-      'http://rss.cnn.com/rss/cnn_topstories.rss',
-      'http://rss.cnn.com/rss/cnn_world.rss',
-      'http://rss.cnn.com/rss/cnn_us.rss',
-      'https://edition.cnn.com/services/rss/'
-    ]
-    
-    cnn_feeds.each do |feed_url|
+    arabic_paths.each do |path|
+      feed_url = make_absolute_url(url, path)
       feed = try_direct_feed(feed_url)
       return feed if feed
     end
@@ -140,31 +125,74 @@ class Feed < ApplicationRecord
   end
 
   def try_discover_feeds(url)
-    page = MetaInspector.new(url, connection_timeout: 10, read_timeout: 10)
+    page = MetaInspector.new(url, 
+      connection_timeout: 15, 
+      read_timeout: 15,
+      headers: {
+        'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept-Language' => 'en-US,en;q=0.9,ar;q=0.8'
+      }
+    )
     
     # Try discovered feeds first
     page.feeds.each do |feed_info|
       next unless feed_info.is_a?(Hash) && feed_info[:href]
       begin
-        feed_url = URI(feed_info[:href]).to_s
+        feed_url = make_absolute_url(url, feed_info[:href])
         feed = try_direct_feed(feed_url)
         return feed if feed
-      rescue URI::InvalidURIError
+      rescue URI::InvalidURIError => e
+        Rails.logger.warn "Invalid feed URL: #{feed_info[:href]} - #{e.message}"
         next
       end
     end
 
     # Try common feed paths
-    common_paths = ['/feed', '/rss', '/atom.xml', '/feed.xml', '/.rss']
+    common_paths = [
+      '/feed', '/rss', '/atom.xml', '/feed.xml', 
+      '/.rss', '/rss.xml', '/feed/rss', '/feed/atom',
+      '/xml/rss', '/services/rss', '/content/rss'
+    ]
+    
     common_paths.each do |path|
-      feed_url = URI.join(url, path).to_s
-      feed = try_direct_feed(feed_url)
-      return feed if feed
+      begin
+        feed_url = make_absolute_url(url, path)
+        feed = try_direct_feed(feed_url)
+        return feed if feed
+      rescue URI::InvalidURIError => e
+        Rails.logger.warn "Invalid constructed feed URL: #{path} - #{e.message}"
+        next
+      end
     end
     
     nil
-  rescue
+  rescue => e
+    Rails.logger.error "Feed discovery failed for #{url}: #{e.message}"
     nil
+  end
+
+  def make_absolute_url(base_url, path)
+    base_uri = Addressable::URI.parse(base_url)
+    path_uri = Addressable::URI.parse(path)
+    
+    if path_uri.relative?
+      base_uri.join(path).normalize.to_s
+    else
+      path
+    end
+  rescue Addressable::URI::InvalidURIError => e
+    Rails.logger.warn "URL construction failed: #{base_url} + #{path} - #{e.message}"
+    path
+  end
+
+  def valid_feed_content?(content)
+    return false if content.nil? || content.empty?
+    
+    # Check for common feed indicators
+    content.include?('<rss') || 
+    content.include?('<feed') || 
+    content.include?('<rdf:RDF') || 
+    valid_xml?(content)
   end
 
   def valid_xml?(content)
@@ -177,12 +205,16 @@ class Feed < ApplicationRecord
     @feedjira_feed ||= fetch_and_parse(rss_url)
 
     self.title = @feedjira_feed.title.presence || "New Feed"
-    self.website_url = @feedjira_feed.url
+    self.website_url = @feedjira_feed.url.presence || rss_url
     self.description = @feedjira_feed.description || "#{@feedjira_feed.title}: #{@feedjira_feed.url}"
     self.last_built = Time.now
 
-    host = URI(@feedjira_feed.url).host
-    self.favicon_url = Favicon.new(host).uri || 'https://i.imgur.com/hGzwKc1.png'
+    begin
+      host = Addressable::URI.parse(self.website_url).host
+      self.favicon_url = host ? Favicon.new(host).uri : 'https://i.imgur.com/hGzwKc1.png'
+    rescue
+      self.favicon_url = 'https://i.imgur.com/hGzwKc1.png'
+    end
     self.image_url = favicon_url
   end
 
