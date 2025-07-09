@@ -108,7 +108,7 @@ class StoriesIndex extends React.Component {
                 rel="noopener noreferrer"
                 style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#1877f2', gap: 12 }}
               >
-                <img src="https://static.xx.fbcdn.net/rsrc.php/yo/r/iRmz9lCMBD2.ico" alt="Facebook" style={{ width: 32, height: 32, borderRadius: 4 }} />
+                <img src="https://cdn.simpleicons.org/facebook/1877f2" alt="Facebook" style={{ width: 32, height: 32, borderRadius: 4 }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 16 }}>See Facebook posts about "{title}"</div>
                   <div style={{ color: '#888', fontSize: 13 }}>Click to view public posts, images, and discussions on Facebook</div>
