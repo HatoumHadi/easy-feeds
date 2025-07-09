@@ -67,22 +67,69 @@ class StoriesIndex extends React.Component {
 
     const storyItems = stories.map(story => {
       const feed = feeds[story.feed_id];
+      // Generate social links for each story
+      const storyTitle = story.title || title;
+      const fbStoryUrl = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(storyTitle)}`;
+      const instaStoryUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(storyTitle.replace(/\s+/g, ''))}/`;
 
       return (
-        <StoriesIndexItem key={story.id}
+        <StoriesIndexItem
+          key={story.id}
           {...{ story, feed, titleLink }}
           history={this.props.history}
+          facebookLink={fbStoryUrl}
+          instagramLink={instaStoryUrl}
           {...this.state}
           {...this.props}
-           />
+        />
       );
-    }
-    );
+    });
 
     // Helper: Facebook search URL
     const fbSearchUrl = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(title)}`;
     // Helper: Instagram search URL (no public search, but hashtag works)
     const instaSearchUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(title.replace(/\s+/g, ''))}/`;
+
+    // Error UI: show if there is a feed error (simulate with this.props.feedError or similar)
+    const { feedError } = this.props;
+    if (feedError) {
+      return (
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
+          <div style={{
+            background: '#fff3f3',
+            border: '1px solid #ffb3b3',
+            borderRadius: 12,
+            padding: '40px 32px',
+            maxWidth: 480,
+            boxShadow: '0 2px 8px rgba(255,0,0,0.07)',
+            textAlign: 'center',
+          }}>
+            <div style={{ fontSize: 48, color: '#ff4d4f', marginBottom: 16 }}>⛔</div>
+            <h2 style={{ color: '#d32f2f', marginBottom: 12 }}>Feed Not Found</h2>
+            <div style={{ color: '#b71c1c', fontSize: 17, marginBottom: 18 }}>
+              We couldn't find an RSS feed at this URL.<br />
+              Try a direct feed URL or contact support if you believe this is an error.
+            </div>
+            <button
+              style={{
+                background: '#ff4d4f',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                padding: '10px 22px',
+                fontWeight: 600,
+                fontSize: 16,
+                cursor: 'pointer',
+                marginTop: 8
+              }}
+              onClick={() => window.location.reload()}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div style={{ display: 'flex', gap: '32px', alignItems: 'flex-start' }}>
@@ -97,43 +144,39 @@ class StoriesIndex extends React.Component {
         {/* Social media content section */}
         <div className="social-media-panel" style={{ flex: 1, minWidth: 320, background: '#f8f9fa', borderRadius: 8, padding: 20, boxShadow: '0 2px 4px rgba(0,0,0,0.07)' }}>
           <h3 style={{ marginTop: 0, color: '#333' }}>Related Social Media</h3>
-          {/* Facebook embed or search preview */}
-          <div style={{ marginBottom: 24 }}>
-            <strong>Facebook Posts</strong>
-            <div style={{ background: '#fff', borderRadius: 6, minHeight: 120, padding: 10, marginTop: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-              {/* Facebook public search embed (iframe) is not officially supported, so we provide a styled link */}
-              <a
-                href={fbSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#1877f2', gap: 12 }}
-              >
-                <img src="https://cdn.simpleicons.org/facebook/1877f2" alt="Facebook" style={{ width: 32, height: 32, borderRadius: 4 }} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 16 }}>See Facebook posts about "{title}"</div>
-                  <div style={{ color: '#888', fontSize: 13 }}>Click to view public posts, images, and discussions on Facebook</div>
+          {/* List all social media links for all stories */}
+          <div style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+            {stories.map((story, idx) => {
+              const storyTitle = story.title || title;
+              const fbStoryUrl = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(storyTitle)}`;
+              const instaStoryUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(storyTitle.replace(/\s+/g, ''))}/`;
+              return (
+                <div key={story.id || idx} style={{ marginBottom: 28, background: '#fff', borderRadius: 8, padding: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>{story.title}</div>
+                  <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>{story.teaser ? story.teaser.slice(0, 100) + (story.teaser.length > 100 ? '...' : '') : ''}</div>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <a
+                      href={fbStoryUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#1877f2', gap: 6, fontWeight: 500 }}
+                    >
+                      <img src="https://cdn.simpleicons.org/facebook/1877f2" alt="Facebook" style={{ width: 20, height: 20 }} />
+                      Facebook
+                    </a>
+                    <a
+                      href={instaStoryUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#e1306c', gap: 6, fontWeight: 500 }}
+                    >
+                      <img src="https://instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png" alt="Instagram" style={{ width: 20, height: 20 }} />
+                      Instagram
+                    </a>
+                  </div>
                 </div>
-              </a>
-            </div>
-          </div>
-          {/* Instagram embed or search preview */}
-          <div>
-            <strong>Instagram Posts</strong>
-            <div style={{ background: '#fff', borderRadius: 6, minHeight: 120, padding: 10, marginTop: 8, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
-              {/* Instagram hashtag search preview (no public API, so link to hashtag page) */}
-              <a
-                href={instaSearchUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#e1306c', gap: 12 }}
-              >
-                <img src="https://instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png" alt="Instagram" style={{ width: 32, height: 32, borderRadius: 4 }} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 16 }}>See Instagram posts for #{title.replace(/\s+/g, '')}</div>
-                  <div style={{ color: '#888', fontSize: 13 }}>Click to view public images and posts on Instagram</div>
-                </div>
-              </a>
-            </div>
+              );
+            })}
           </div>
         </div>
       </div>

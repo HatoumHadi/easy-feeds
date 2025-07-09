@@ -97,6 +97,7 @@ class StoriesIndexItem extends React.Component {
             </h5>
             <p dangerouslySetInnerHTML={summaryText} />
           </div>
+          {/* Social Media Links Section - moved to main social media panel */}
         </div>
       </div>
     );
