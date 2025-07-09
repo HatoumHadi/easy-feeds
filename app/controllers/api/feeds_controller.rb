@@ -24,6 +24,12 @@ class Api::FeedsController < ApplicationController
     @feed = Feed
       .includes(:stories, :subscriptions)
       .find_by(id: params[:id])
+    
+    if @feed && (@feed.website_links.blank? || @feed.social_links.blank?)
+      @feed.populate_feed_metadata
+      @feed.save if @feed.changed?
+    end
+    
     render :show
   end
 
@@ -36,7 +42,6 @@ class Api::FeedsController < ApplicationController
       @feed = Feed.new(rss_url: feed_params[:rss_url])
       unless @feed.save
         render json: @feed.errors.full_messages, status: 422
-        # this will stop subscribe action
       end
     end
   end
@@ -44,5 +49,4 @@ class Api::FeedsController < ApplicationController
   def feed_params
     params.require(:feed).permit(:rss_url, :title)
   end
-
 end
