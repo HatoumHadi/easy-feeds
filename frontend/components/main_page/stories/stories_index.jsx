@@ -150,11 +150,13 @@ class StoriesIndex extends React.Component {
               const storyTitle = story.title || title;
               const fbStoryUrl = `https://www.facebook.com/search/posts/?q=${encodeURIComponent(storyTitle)}`;
               const instaStoryUrl = `https://www.instagram.com/explore/tags/${encodeURIComponent(storyTitle.replace(/\s+/g, ''))}/`;
+              const twitterUrl = `https://twitter.com/search?q=${encodeURIComponent(storyTitle)}&src=typed_query`;
+              const youtubeUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(storyTitle)}`;
               return (
                 <div key={story.id || idx} style={{ marginBottom: 28, background: '#fff', borderRadius: 8, padding: 14, boxShadow: '0 1px 2px rgba(0,0,0,0.04)' }}>
                   <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>{story.title}</div>
                   <div style={{ color: '#666', fontSize: 13, marginBottom: 8 }}>{story.teaser ? story.teaser.slice(0, 100) + (story.teaser.length > 100 ? '...' : '') : ''}</div>
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                     <a
                       href={fbStoryUrl}
                       target="_blank"
@@ -172,6 +174,24 @@ class StoriesIndex extends React.Component {
                     >
                       <img src="https://instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png" alt="Instagram" style={{ width: 20, height: 20 }} />
                       Instagram
+                    </a>
+                    <a
+                      href={twitterUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#000', gap: 6, fontWeight: 500 }}
+                    >
+                      <img src="https://cdn.simpleicons.org/x/000000" alt="X" style={{ width: 20, height: 20 }} />
+                      X
+                    </a>
+                    <a
+                      href={youtubeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', color: '#ff0000', gap: 6, fontWeight: 500 }}
+                    >
+                      <img src="https://cdn.simpleicons.org/youtube/ff0000" alt="YouTube" style={{ width: 20, height: 20 }} />
+                      YouTube
                     </a>
                   </div>
                 </div>
