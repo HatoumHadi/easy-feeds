@@ -115,26 +115,26 @@ class Discover extends React.Component {
     // Fetch profile info (oEmbed or public endpoints)
     try {
       let profile = { platform, username, url };
-      // Use unavatar.io with platform/username for best reliability
+      // Use backend proxy for Instagram avatars to bypass CORS and always get the real image
       if (platform === "Instagram") {
-        profile.avatar = `https://unavatar.io/instagram/${username}`;
-        // Only use fallback with platform/username, not full URL for Instagram
-        profile.avatarFallback = inputUrl ? `https://unavatar.io/${inputUrl.origin + inputUrl.pathname}` : `https://unavatar.io/${url}`;
+        // Use relative URL for backend proxy so it works in all environments (dev, prod, behind proxy)
+        profile.avatar = `/api/instagram_avatar/${username}`;
+        profile.avatarFallback = `/api/instagram_avatar/${username}`;
         profile.bio = null;
         profile.followers = null;
       } else if (platform === "X") {
         profile.avatar = `https://unavatar.io/twitter/${username}`;
-        profile.avatarFallback = inputUrl ? `https://unavatar.io/${inputUrl.origin + inputUrl.pathname}` : `https://unavatar.io/${url}`;
+        profile.avatarFallback = `https://unavatar.io/twitter/${username}`;
         profile.bio = null;
         profile.followers = null;
       } else if (platform === "YouTube") {
         profile.avatar = `https://unavatar.io/youtube/${username}`;
-        profile.avatarFallback = inputUrl ? `https://unavatar.io/${inputUrl.origin + inputUrl.pathname}` : `https://unavatar.io/${url}`;
+        profile.avatarFallback = `https://unavatar.io/youtube/${username}`;
         profile.bio = null;
         profile.followers = null;
       } else if (platform === "Facebook") {
         profile.avatar = `https://unavatar.io/facebook/${username}`;
-        profile.avatarFallback = inputUrl ? `https://unavatar.io/${inputUrl.origin + inputUrl.pathname}` : `https://unavatar.io/${url}`;
+        profile.avatarFallback = `https://unavatar.io/facebook/${username}`;
         profile.bio = null;
         profile.followers = null;
       }
@@ -183,31 +183,35 @@ class Discover extends React.Component {
                 src={socialProfile.avatar}
                 alt="avatar"
                 style={{ width: 56, height: 56, borderRadius: '50%', border: '2px solid #eee', background: '#fff', objectFit: 'cover' }}
-                onError={async e => {
-                  // Try to fetch the real image directly from the platform as a last resort
+                onError={e => {
+                  // Defensive: persist event for async use
+                  e.persist && e.persist();
+                  // Fallback logic for broken images
                   if (socialProfile.avatarFallback && !e.target._triedFallback) {
                     e.target._triedFallback = true;
                     e.target.src = socialProfile.avatarFallback;
                   } else if (socialProfile.platform === 'Facebook' && !e.target._triedDirect) {
                     e.target._triedDirect = true;
-                    // Try Facebook graph API for public pages
                     const fbUrl = `https://graph.facebook.com/${socialProfile.username}/picture?type=large`;
                     e.target.src = fbUrl;
                   } else if (socialProfile.platform === 'Instagram' && !e.target._triedDirect) {
                     e.target._triedDirect = true;
-                    // Try to get Instagram profile image via unavatar.io backend proxy (best chance for CORS)
+                    // Try to get Instagram profile image via unavatar.io as a last resort
                     const unavatarProxy = `https://unavatar.io/instagram/${socialProfile.username}`;
                     const testImg = new window.Image();
-                    testImg.onload = function() { e.target.src = unavatarProxy; };
+                    testImg.onload = function() { if (e.target) e.target.src = unavatarProxy; };
                     testImg.onerror = function() {
-                      // Fallback to initials if all else fails
-                      e.target.onerror = null;
-                      e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(socialProfile.username || 'User') + '&background=eee&color=555&size=56';
+                      if (e.target) {
+                        e.target.onerror = null;
+                        e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(socialProfile.username || 'User') + '&background=eee&color=555&size=56';
+                      }
                     };
                     testImg.src = unavatarProxy;
                   } else {
-                    e.target.onerror = null;
-                    e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(socialProfile.username || 'User') + '&background=eee&color=555&size=56';
+                    if (e.target) {
+                      e.target.onerror = null;
+                      e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(socialProfile.username || 'User') + '&background=eee&color=555&size=56';
+                    }
                   }
                 }}
               />
