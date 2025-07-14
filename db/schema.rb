@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_07_07_172657) do
+ActiveRecord::Schema.define(version: 2025_07_11_120000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -38,7 +38,7 @@ ActiveRecord::Schema.define(version: 2025_07_07_172657) do
     t.string "favicon_url", default: "", null: false
     t.string "image_url", default: ""
     t.string "website_url", default: "", null: false
-    t.datetime "last_built", default: "2025-07-09 07:01:19", null: false
+    t.datetime "last_built", default: "2025-07-14 06:03:10", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "OK"
@@ -57,6 +57,27 @@ ActiveRecord::Schema.define(version: 2025_07_07_172657) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["reader_id", "story_id"], name: "index_reads_on_reader_id_and_story_id", unique: true
+  end
+
+  create_table "social_media_marked", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.bigint "social_media_profile_id", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["social_media_profile_id"], name: "index_social_media_marked_on_social_media_profile_id"
+    t.index ["user_id", "social_media_profile_id"], name: "index_social_media_marked_on_user_and_profile", unique: true
+    t.index ["user_id"], name: "index_social_media_marked_on_user_id"
+  end
+
+  create_table "social_media_profiles", force: :cascade do |t|
+    t.string "platform", null: false
+    t.string "username", null: false
+    t.string "display_name"
+    t.string "profile_url"
+    t.string "avatar_url"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["platform", "username"], name: "index_social_media_profiles_on_platform_and_username", unique: true
   end
 
   create_table "stories", force: :cascade do |t|
@@ -97,4 +118,6 @@ ActiveRecord::Schema.define(version: 2025_07_07_172657) do
     t.index ["session_token"], name: "index_users_on_session_token", unique: true
   end
 
+  add_foreign_key "social_media_marked", "social_media_profiles"
+  add_foreign_key "social_media_marked", "users"
 end

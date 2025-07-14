@@ -1,9 +1,35 @@
+
 import React from 'react';
 import { Link } from 'react-router-dom';
 import DiscoverIndexItem from './discover_index_item';
 import AddFeedForm from './add_feed_form';
 
 class Discover extends React.Component {
+
+  // Handle follow social profile button click
+  handleFollowSocialProfile = async (profile) => {
+    try {
+      const response = await fetch('/api/social_media_markeds', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify({
+          platform: profile.platform,
+          username: profile.username,
+          display_name: profile.display_name || profile.name,
+          profile_url: profile.url,
+          avatar_url: profile.avatar
+        })
+      });
+      if (!response.ok) throw new Error('Failed to follow profile');
+      // Optionally update UI or state here
+      alert('Profile followed!');
+    } catch (err) {
+      alert('Could not follow profile.');
+    }
+  };
   state = {
     query: "",
     dataBaseSearch: true,
@@ -184,9 +210,7 @@ class Discover extends React.Component {
                 alt="avatar"
                 style={{ width: 56, height: 56, borderRadius: '50%', border: '2px solid #eee', background: '#fff', objectFit: 'cover' }}
                 onError={e => {
-                  // Defensive: persist event for async use
                   e.persist && e.persist();
-                  // Fallback logic for broken images
                   if (socialProfile.avatarFallback && !e.target._triedFallback) {
                     e.target._triedFallback = true;
                     e.target.src = socialProfile.avatarFallback;
@@ -196,7 +220,6 @@ class Discover extends React.Component {
                     e.target.src = fbUrl;
                   } else if (socialProfile.platform === 'Instagram' && !e.target._triedDirect) {
                     e.target._triedDirect = true;
-                    // Try to get Instagram profile image via unavatar.io as a last resort
                     const unavatarProxy = `https://unavatar.io/instagram/${socialProfile.username}`;
                     const testImg = new window.Image();
                     testImg.onload = function() { if (e.target) e.target.src = unavatarProxy; };
@@ -221,6 +244,12 @@ class Discover extends React.Component {
                 {socialProfile.bio && <div style={{ color: '#666', fontSize: 14 }}>{socialProfile.bio}</div>}
                 {socialProfile.followers && <div style={{ color: '#888', fontSize: 13 }}>Followers: {socialProfile.followers}</div>}
                 <a href={socialProfile.url} target="_blank" rel="noopener noreferrer" style={{ color: '#1976d2', fontWeight: 500, fontSize: 15, textDecoration: 'none', marginTop: 4, display: 'inline-block' }}>View Profile</a>
+                <button
+                  style={{ marginLeft: 16, padding: '6px 18px', borderRadius: 6, border: 'none', background: '#219653', color: '#fff', fontWeight: 600, fontSize: 15, cursor: 'pointer', display: 'inline-block' }}
+                  onClick={() => this.handleFollowSocialProfile(socialProfile)}
+                >
+                  Follow
+                </button>
               </div>
             </div>
           )}

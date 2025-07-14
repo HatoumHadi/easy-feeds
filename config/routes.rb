@@ -11,6 +11,8 @@ Rails.application.routes.draw do
     resources :stories, only: [:index, :show]
     resources :collections, only: [:create, :update, :destroy]
     resources :reads, only: [:create, :destroy, :index]
+    resources :social_media_markeds, only: [:index, :create]
+    delete 'social_media_markeds', to: 'social_media_markeds#destroy'
   end
 
 end

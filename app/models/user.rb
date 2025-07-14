@@ -102,5 +102,9 @@ class User < ApplicationRecord
     SecureRandom.urlsafe_base64(16)
   end
 
+
   attr_reader :password
+
+  has_many :social_media_markeds, dependent: :destroy
+  has_many :marked_social_media_profiles, through: :social_media_markeds, source: :social_media_profile
 end
