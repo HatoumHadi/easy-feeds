@@ -25,9 +25,10 @@ class Discover extends React.Component {
       });
       if (!response.ok) throw new Error('Failed to follow profile');
       // Optionally update UI or state here
-      alert('Profile followed!');
+      // Success: update state/UI as needed, no alert
     } catch (err) {
-      alert('Could not follow profile.');
+      // Failure: optionally set error state, but do not alert
+      this.setState({ socialError: 'Could not follow profile.' });
     }
   };
   state = {

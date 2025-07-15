@@ -38,7 +38,7 @@ ActiveRecord::Schema.define(version: 2025_07_11_120000) do
     t.string "favicon_url", default: "", null: false
     t.string "image_url", default: ""
     t.string "website_url", default: "", null: false
-    t.datetime "last_built", default: "2025-07-14 06:03:10", null: false
+    t.datetime "last_built", default: "2025-07-15 09:05:54", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "OK"
@@ -59,14 +59,14 @@ ActiveRecord::Schema.define(version: 2025_07_11_120000) do
     t.index ["reader_id", "story_id"], name: "index_reads_on_reader_id_and_story_id", unique: true
   end
 
-  create_table "social_media_marked", force: :cascade do |t|
+  create_table "social_media_markeds", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.bigint "social_media_profile_id", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
-    t.index ["social_media_profile_id"], name: "index_social_media_marked_on_social_media_profile_id"
-    t.index ["user_id", "social_media_profile_id"], name: "index_social_media_marked_on_user_and_profile", unique: true
-    t.index ["user_id"], name: "index_social_media_marked_on_user_id"
+    t.index ["social_media_profile_id"], name: "index_social_media_markeds_on_social_media_profile_id"
+    t.index ["user_id", "social_media_profile_id"], name: "index_social_media_markeds_on_user_and_profile", unique: true
+    t.index ["user_id"], name: "index_social_media_markeds_on_user_id"
   end
 
   create_table "social_media_profiles", force: :cascade do |t|
@@ -118,6 +118,6 @@ ActiveRecord::Schema.define(version: 2025_07_11_120000) do
     t.index ["session_token"], name: "index_users_on_session_token", unique: true
   end
 
-  add_foreign_key "social_media_marked", "social_media_profiles"
-  add_foreign_key "social_media_marked", "users"
+  add_foreign_key "social_media_markeds", "social_media_profiles"
+  add_foreign_key "social_media_markeds", "users"
 end
