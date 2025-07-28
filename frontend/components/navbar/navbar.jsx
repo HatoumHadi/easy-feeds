@@ -208,11 +208,11 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
               borderRadius: 8,
               marginBottom: 6,
               textDecoration: 'none',
-              background: '#f7f8fa',
+              background: '#f6fff8',
               transition: 'background 0.2s',
-              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-              border: '1px solid #e5e7eb',
-              color: '#222',
+              boxShadow: '0 1px 2px rgba(22,163,74,0.07)',
+              border: '1.5px solid #bbf7d0',
+              color: '#166534',
               cursor: 'pointer',
             }}
             onMouseOver={e => e.currentTarget.style.background = '#e9ecef'}
@@ -229,9 +229,9 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
                 borderRadius: '50%',
                 objectFit: 'cover',
                 marginRight: 12,
-                border: '2px solid #d1d5db',
+                border: '2px solid #bbf7d0',
                 background: '#fff',
-                boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+                boxShadow: '0 1px 4px rgba(22,163,74,0.09)'
               }}
             />
             <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -263,7 +263,7 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
                 }
               }}
             >
-              <i className="fa fa-plus-circle" style={{ color: '#2563eb', fontSize: 20 }}></i>
+              <i className="fa fa-plus-circle" style={{ color: '#16a34a', fontSize: 20, filter: 'drop-shadow(0 1px 2px #bbf7d0)' }}></i>
             </button>
           </div>
         );
