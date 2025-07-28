@@ -195,57 +195,79 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
       >
         Social Media Profiles
       </div>
-
-      {socialProfiles.map(profile => (
-        <div
-          className="social-profile-item"
-          key={profile.id}
-          title={profile.display_name || profile.username}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            padding: '7px 10px',
-            borderRadius: 8,
-            marginBottom: 6,
-            textDecoration: 'none',
-            background: '#f7f8fa',
-            transition: 'background 0.2s',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
-            border: '1px solid #e5e7eb',
-            color: '#222',
-            cursor: 'pointer',
-          }}
-          onMouseOver={e => e.currentTarget.style.background = '#e9ecef'}
-          onMouseOut={e => e.currentTarget.style.background = '#f7f8fa'}
-          onClick={() => onSocialProfileClick && onSocialProfileClick(profile)}
-        >
-          <img
-            className="social-profile-avatar"
-            src={getAvatarUrl(profile)}
-            alt={profile.display_name || profile.username}
+      {socialProfiles.map(profile => {
+        return (
+          <div
+            className="social-profile-item"
+            key={profile.id}
+            title={profile.display_name || profile.username}
             style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              objectFit: 'cover',
-              marginRight: 12,
-              border: '2px solid #d1d5db',
-              background: '#fff',
-              boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+              display: 'flex',
+              alignItems: 'center',
+              padding: '7px 10px',
+              borderRadius: 8,
+              marginBottom: 6,
+              textDecoration: 'none',
+              background: '#f7f8fa',
+              transition: 'background 0.2s',
+              boxShadow: '0 1px 2px rgba(0,0,0,0.03)',
+              border: '1px solid #e5e7eb',
+              color: '#222',
+              cursor: 'pointer',
             }}
-          />
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-            <span className="social-profile-username" style={{ fontWeight: 500, fontSize: 15, color: '#222' }}>
-              {profile.display_name || profile.username}
-            </span>
-            {profile.platform && (
-              <span className="social-profile-platform" style={{ color: '#888', fontSize: 12, marginTop: 1 }}>
-                @{profile.platform}
+            onMouseOver={e => e.currentTarget.style.background = '#e9ecef'}
+            onMouseOut={e => e.currentTarget.style.background = '#f7f8fa'}
+            onClick={() => onSocialProfileClick && onSocialProfileClick(profile)}
+          >
+            <img
+              className="social-profile-avatar"
+              src={getAvatarUrl(profile)}
+              alt={profile.display_name || profile.username}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                objectFit: 'cover',
+                marginRight: 12,
+                border: '2px solid #d1d5db',
+                background: '#fff',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.06)'
+              }}
+            />
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+              <span className="social-profile-username" style={{ fontWeight: 500, fontSize: 15, color: '#222' }}>
+                {profile.display_name || profile.username}
               </span>
-            )}
+              {profile.platform && (
+                <span className="social-profile-platform" style={{ color: '#888', fontSize: 12, marginTop: 1 }}>
+                  @{profile.platform}
+                </span>
+              )}
+            </div>
+            <button
+              style={{
+                marginLeft: 'auto',
+                background: 'none',
+                border: 'none',
+                cursor: 'pointer',
+                padding: 0,
+                display: 'flex',
+                alignItems: 'center',
+                fontSize: 18
+              }}
+              title="Add to Folder"
+              onClick={e => {
+                e.stopPropagation();
+                if (window.openMoveToFolderModal) {
+                  window.openMoveToFolderModal(profile, 'profile');
+                }
+              }}
+            >
+              <i className="fa fa-plus-circle" style={{ color: '#2563eb', fontSize: 20 }}></i>
+            </button>
           </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   ) : null;
 
@@ -333,3 +355,162 @@ const NavBarAddContent = ({ closeNavBar }) => (
 );
 
 export default NavBar;
+// Simple modal stub for moving items to folders
+import ReactDOM from 'react-dom';
+class MoveToFolderModal extends React.Component {
+  state = {
+    selectedFolderId: '',
+    newFolderName: '',
+    creating: false,
+    error: '',
+    success: false
+  };
+
+  handleSelectChange = e => {
+    this.setState({ selectedFolderId: e.target.value, creating: false, newFolderName: '', error: '', success: false });
+  };
+  handleNewFolderChange = e => {
+    this.setState({ newFolderName: e.target.value, error: '', success: false });
+  };
+  handleCreateNew = () => {
+    this.setState({ creating: true, selectedFolderId: '', error: '', success: false });
+  };
+  handleMove = () => {
+    const { selectedFolderId, newFolderName, creating } = this.state;
+    if (creating && !newFolderName.trim()) {
+      this.setState({ error: 'Folder name required.' });
+      return;
+    }
+    if (!creating && !selectedFolderId) {
+      this.setState({ error: 'Please select a folder.' });
+      return;
+    }
+    // Call onMove with folder info
+    this.props.onMove(creating ? { name: newFolderName } : { id: selectedFolderId });
+    this.setState({ success: true });
+    setTimeout(() => this.props.onClose(), 900);
+  };
+  handleCancelCreate = () => {
+    this.setState({ creating: false, newFolderName: '', error: '', success: false });
+  };
+
+  render() {
+    const { visible, onClose, item, type, collections = [] } = this.props;
+    const { selectedFolderId, newFolderName, creating, error, success } = this.state;
+    if (!visible) return null;
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(22,163,74,0.08)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ background: '#fff', borderRadius: 18, minWidth: 340, maxWidth: 400, padding: 36, boxShadow: '0 8px 32px rgba(22,163,74,0.13)', position: 'relative', border: '1.5px solid #bbf7d0' }}>
+          <button onClick={onClose} style={{ position: 'absolute', top: 18, right: 18, background: 'none', border: 'none', fontSize: 22, color: '#16a34a', cursor: 'pointer' }}>
+            <i className="fa fa-times"></i>
+          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 22 }}>
+            <img src={type === 'profile' ? (item.avatar_url || '/default-avatar.png') : (item.favicon_url || '/favicon.ico')} alt="avatar" style={{ width: 44, height: 44, borderRadius: '50%', border: '2px solid #bbf7d0', background: '#fff', boxShadow: '0 2px 8px rgba(22,163,74,0.07)' }} />
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 18, color: '#166534', marginBottom: 2 }}>{type === 'profile' ? (item.display_name || item.username) : item.subscription_title}</div>
+              {type === 'profile' && <div style={{ color: '#16a34a', fontSize: 13 }}>@{item.platform}</div>}
+            </div>
+          </div>
+          <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 14, color: '#166534', letterSpacing: 0.2 }}>Add to Folder</div>
+          {success ? (
+            <div style={{ textAlign: 'center', color: '#16a34a', fontWeight: 600, fontSize: 16, margin: '18px 0' }}>
+              <i className="fa fa-check-circle" style={{ fontSize: 22, marginRight: 8 }}></i>
+              Added successfully!
+            </div>
+          ) : !creating ? (
+            <React.Fragment>
+              <select value={selectedFolderId} onChange={this.handleSelectChange} style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #bbf7d0', marginBottom: 14, fontSize: 16, background: '#f6fff8', color: '#166534' }}>
+                <option value="">Select existing folder...</option>
+                {collections.map(col => (
+                  <option key={col.id} value={col.id}>{col.name}</option>
+                ))}
+              </select>
+              <button onClick={this.handleCreateNew} style={{ width: '100%', background: '#e8f7ec', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, cursor: 'pointer', marginBottom: 12, transition: 'background 0.2s' }}>
+                <i className="fa fa-folder-plus" style={{ marginRight: 7 }}></i> Create New Folder
+              </button>
+              <button onClick={this.handleMove} style={{ width: '100%', background: selectedFolderId ? '#16a34a' : '#e8f7d0', color: selectedFolderId ? '#fff' : '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, cursor: selectedFolderId ? 'pointer' : 'not-allowed', marginBottom: 10, transition: 'background 0.2s' }} disabled={!selectedFolderId}>
+                <i className="fa fa-check" style={{ marginRight: 7 }}></i> Add to Folder
+              </button>
+              {error && <div style={{ color: '#dc2626', fontSize: 13, marginTop: 8 }}>{error}</div>}
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <input
+                type="text"
+                placeholder="New folder name"
+                value={newFolderName}
+                onChange={this.handleNewFolderChange}
+                style={{ width: '100%', padding: 10, borderRadius: 8, border: '1.5px solid #bbf7d0', marginBottom: 14, fontSize: 16, background: '#f6fff8', color: '#166534' }}
+              />
+              <button onClick={this.handleMove} style={{ width: '100%', background: newFolderName ? '#16a34a' : '#e8f7d0', color: newFolderName ? '#fff' : '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, cursor: newFolderName ? 'pointer' : 'not-allowed', marginBottom: 10, transition: 'background 0.2s' }} disabled={!newFolderName}>
+                <i className="fa fa-check" style={{ marginRight: 7 }}></i> Create & Add
+              </button>
+              <button onClick={this.handleCancelCreate} style={{ width: '100%', background: '#e8f7ec', color: '#16a34a', border: '1.5px solid #bbf7d0', borderRadius: 8, padding: '10px 0', fontWeight: 600, fontSize: 16, cursor: 'pointer', marginTop: 4, transition: 'background 0.2s' }}>
+                Cancel
+              </button>
+              {error && <div style={{ color: '#dc2626', fontSize: 13, marginTop: 8 }}>{error}</div>}
+            </React.Fragment>
+          )}
+        </div>
+      </div>
+    );
+  }
+}
+
+// Ensure modal receives folders array
+window.openMoveToFolderModal = (item, type, collections) => {
+  if (!window._moveToFolderModalRoot) {
+    window._moveToFolderModalRoot = document.createElement('div');
+    document.body.appendChild(window._moveToFolderModalRoot);
+  }
+  let localCollections = Array.isArray(collections) ? [...collections] : [];
+  const close = () => {
+    ReactDOM.unmountComponentAtNode(window._moveToFolderModalRoot);
+  };
+  const handleMove = async folder => {
+    try {
+      // Get CSRF token from meta tag
+      const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+      if (folder.name) {
+        // Create new folder and add item (API)
+        const res = await fetch('/api/collections', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({
+            name: folder.name,
+            item_type: type,
+            item_id: item.id
+          })
+        });
+        if (!res.ok) throw new Error('Failed to create folder');
+        const data = await res.json();
+        alert(`Created folder '${folder.name}' and added ${item.display_name || item.username || item.subscription_title}`);
+      } else {
+        // Add to existing folder (API)
+        const res = await fetch(`/api/collections/${folder.id}/add_item`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify({
+            item_type: type,
+            item_id: item.id
+          })
+        });
+        if (!res.ok) throw new Error('Failed to add to folder');
+        alert(`Added ${item.display_name || item.username || item.subscription_title} to folder '${localCollections.find(c => c.id == folder.id)?.name}'`);
+      }
+      close();
+    } catch (err) {
+      alert('Error: ' + err.message);
+    }
+  };
+  ReactDOM.render(
+    <MoveToFolderModal visible={true} onClose={close} item={item} type={type} collections={localCollections} onMove={handleMove} />,
+    window._moveToFolderModalRoot
+  );
+}

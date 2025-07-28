@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2025_07_11_120000) do
+ActiveRecord::Schema.define(version: 2025_07_28_120000) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
@@ -21,6 +21,14 @@ ActiveRecord::Schema.define(version: 2025_07_11_120000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["subscription_id", "collection_id"], name: "index_collection_assignments_on_sub_id_and_coll_id", unique: true
+  end
+
+  create_table "collection_items", force: :cascade do |t|
+    t.integer "collection_id"
+    t.integer "item_id"
+    t.string "item_type"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
   end
 
   create_table "collections", force: :cascade do |t|
@@ -38,7 +46,7 @@ ActiveRecord::Schema.define(version: 2025_07_11_120000) do
     t.string "favicon_url", default: "", null: false
     t.string "image_url", default: ""
     t.string "website_url", default: "", null: false
-    t.datetime "last_built", default: "2025-07-15 09:05:54", null: false
+    t.datetime "last_built", default: "2025-07-28 12:36:10", null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "status", default: "OK"

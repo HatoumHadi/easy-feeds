@@ -21,5 +21,6 @@ class Collection < ApplicationRecord
   has_many :feeds,
     through: :subscriptions,
     source: :feed
-
+  has_many :collection_items, dependent: :destroy
+  validates :name, presence: true
 end
