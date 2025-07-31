@@ -9,8 +9,8 @@ Rails.application.routes.draw do
     resources :subscriptions, only: [:create, :index, :show, :destroy, :update]
     resources :feeds, only: [:index, :show]
     resources :stories, only: [:index, :show]
-    resources :collections, only: [:create, :update, :destroy] do
-      post 'add_item', on: :member
+    resources :collections, only: [:create, :update, :destroy, :index] do
+      post 'add_items', on: :member
     end
     resources :reads, only: [:create, :destroy, :index]
     resources :social_media_markeds, only: [:index, :create]

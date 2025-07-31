@@ -1,8 +1,15 @@
 class Api::CollectionsController < ApplicationController
+  skip_before_action :verify_authenticity_token
   before_action :require_login
 
   # Create a new collection and add an item (profile or website)
   def create
+    # Prevent duplicate collection names for the same user
+    existing = Collection.find_by(name: params[:name], creator_id: current_user.id)
+    if existing
+      render json: { error: ["Collection with this name already exists."] }, status: :unprocessable_entity
+      return
+    end
     collection = Collection.new(name: params[:name], creator_id: current_user.id)
     if collection.save
       item = CollectionItem.create(
@@ -17,18 +24,35 @@ class Api::CollectionsController < ApplicationController
   end
 
   # Add an item to an existing collection
-  def add_item
+  def add_items
     collection = Collection.find(params[:id])
-    item = CollectionItem.create(
+    existing_item = CollectionItem.find_by(
       collection: collection,
       item_type: params[:item_type],
       item_id: params[:item_id]
     )
-    if item.persisted?
-      render json: { success: true, item: item }, status: :ok
+
+    if existing_item
+      render json: { success: false, message: "Item already exists in this collection.", item: existing_item }, status: :ok
     else
-      render json: { error: item.errors.full_messages }, status: :unprocessable_entity
+      item = CollectionItem.create(
+        collection: collection,
+        item_type: params[:item_type],
+        item_id: params[:item_id]
+      )
+      if item.persisted?
+        render json: { success: true, item: item }, status: :ok
+      else
+        render json: { error: item.errors.full_messages }, status: :unprocessable_entity
+      end
     end
+  end
+
+
+  # List all collections for the current user
+  def index
+    collections = Collection.where(creator_id: current_user.id)
+    render json: collections
   end
 
   private

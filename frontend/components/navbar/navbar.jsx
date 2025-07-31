@@ -137,39 +137,48 @@ const NavBarCollapseExpand = ({ isOpen, handleClick }) => (
   </div>
 );
 
-const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [], onSocialProfileClick }) => {
-  const feedsList = feedIds.map(feedId => {
+
+// NavBarLinks: Group feeds by collection (folder), render folders and their feeds, and show ungrouped feeds
+const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [], onSocialProfileClick, collections = [] }) => {
+  // Group feeds by collection_id
+  const feedsByCollection = {};
+  const ungroupedFeeds = [];
+  feedIds.forEach(feedId => {
     const feed = feeds[feedId];
-    return (
-      <Link className={selected == feedId ? "selected" : ""}
-        onClick={closeNavBar}
-        key={feedId}
-        to={`/i/subscriptions/${feed.id}`}>
-        <li>
-          <img src={feed.favicon_url} /> {feed.subscription_title}
-        </li>
-      </Link>
-    );
+    if (feed.collection_id) {
+      if (!feedsByCollection[feed.collection_id]) feedsByCollection[feed.collection_id] = [];
+      feedsByCollection[feed.collection_id].push(feed);
+    } else {
+      ungroupedFeeds.push(feed);
+    }
   });
+
+  // State for expanded/collapsed folders (in functional component, use window for persistence)
+  if (!window._navbarFolderOpen) window._navbarFolderOpen = {};
+  const toggleFolder = (id) => {
+    window._navbarFolderOpen[id] = !window._navbarFolderOpen[id];
+    // Force re-render
+    window.dispatchEvent(new Event('navbar-folder-toggle'));
+  };
+  const [ignored, forceUpdate] = React.useReducer(x => x + 1, 0);
+  React.useEffect(() => {
+    const handler = () => forceUpdate();
+    window.addEventListener('navbar-folder-toggle', handler);
+    return () => window.removeEventListener('navbar-folder-toggle', handler);
+  }, []);
 
   // Helper to get the correct avatar URL for the platform
   const getAvatarUrl = (profile) => {
-    // If avatar_url is a valid external URL, use it
     if (profile.avatar_url && !profile.avatar_url.startsWith('/api/')) {
       return profile.avatar_url;
     }
-    // Otherwise, construct avatar URL based on platform and username
     const platform = (profile.platform || '').toLowerCase();
-    const username = profile.username || '';
     switch (platform) {
       case 'twitter':
-        // Twitter avatars require API, fallback to default
         return 'https://abs.twimg.com/sticky/default_profile_images/default_profile_400x400.png';
       case 'facebook':
-        // Facebook avatars require API, fallback to default
         return 'https://static.xx.fbcdn.net/rsrc.php/v3/yi/r/8OasGoQgQgF.png';
       case 'instagram':
-        // Instagram: use their favicon as a placeholder
         return 'https://instagram.com/static/images/ico/favicon-192.png/68d99ba29cc8.png';
       case 'linkedin':
         return 'https://static.licdn.com/scds/common/u/images/logos/favicons/v1/favicon.ico';
@@ -180,6 +189,62 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
     }
   };
 
+  // Render folders (collections) and their feeds (folders always visible, feeds only when expanded)
+  const foldersList = collections.length > 0 ? collections.map(col => {
+    const colFeeds = feedsByCollection[col.id] || [];
+    const isOpen = window._navbarFolderOpen[col.id] !== false;
+    return (
+      <div key={col.id} className="navbar-folder-group" style={{ marginBottom: 8 }}>
+        <div
+          className="navbar-folder-header"
+          style={{ display: 'flex', alignItems: 'center', cursor: 'pointer', fontWeight: 600, fontSize: 15, color: '#166534', background: isOpen ? '#f6fff8' : '#f7f8fa', borderRadius: 8, padding: '7px 10px', border: '1.5px solid #bbf7d0', marginBottom: 2 }}
+          onClick={() => toggleFolder(col.id)}
+        >
+          <i className={`fa ${isOpen ? 'fa-folder-open' : 'fa-folder'}`} style={{ marginRight: 8, color: '#16a34a' }}></i>
+          {col.name}
+          <span style={{ marginLeft: 'auto', fontSize: 13, color: '#16a34a' }}>{colFeeds.length}</span>
+        </div>
+        {isOpen && colFeeds.length > 0 && (
+          <div className="navbar-folder-feeds" style={{ marginLeft: 18, marginTop: 2 }}>
+            {colFeeds.map(feed => (
+              <Link
+                className={selected == feed.id ? "selected" : ""}
+                onClick={closeNavBar}
+                key={feed.id}
+                to={`/i/subscriptions/${feed.id}`}
+              >
+                <li style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderRadius: 6 }}>
+                  <img src={feed.favicon_url} style={{ width: 18, height: 18, marginRight: 8, borderRadius: 3, background: '#fff', border: '1px solid #e5e7eb' }} />
+                  {feed.subscription_title}
+                </li>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }) : null;
+
+  // Render ungrouped feeds (not in any folder)
+  const ungroupedFeedsList = ungroupedFeeds.length > 0 ? (
+    <div className="navbar-ungrouped-feeds" style={{ marginBottom: 10 }}>
+      {ungroupedFeeds.map(feed => (
+        <Link
+          className={selected == feed.id ? "selected" : ""}
+          onClick={closeNavBar}
+          key={feed.id}
+          to={`/i/subscriptions/${feed.id}`}
+        >
+          <li style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderRadius: 6 }}>
+            <img src={feed.favicon_url} style={{ width: 18, height: 18, marginRight: 8, borderRadius: 3, background: '#fff', border: '1px solid #e5e7eb' }} />
+            {feed.subscription_title}
+          </li>
+        </Link>
+      ))}
+    </div>
+  ) : null;
+
+  // Social profiles section (unchanged)
   const socialProfilesList = socialProfiles.length > 0 ? (
     <div className="social-profiles-list" style={{ marginTop: 24, padding: '12px 0', borderTop: '1px solid #ececec' }}>
       <div
@@ -271,7 +336,7 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
     </div>
   ) : null;
 
-  return(
+  return (
     <nav className="navbar-links">
       <div className="feeds">
         <Link to="/i/latest" onClick={closeNavBar}
@@ -280,7 +345,6 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
             Latest
           </li>
         </Link>
-
         <Link to="/i/reads" onClick={closeNavBar}
           className={`reads${selected === "reads" ? " selected" : ""}`}>
           <li>
@@ -291,7 +355,8 @@ const NavBarLinks = ({ feedIds, feeds, selected, closeNavBar, socialProfiles = [
           </li>
         </Link>
         <div className="feeds-list">
-          {feedsList}
+          {foldersList}
+          {ungroupedFeedsList}
         </div>
         {socialProfilesList}
       </div>
