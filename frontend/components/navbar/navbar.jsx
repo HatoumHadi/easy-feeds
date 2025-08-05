@@ -61,7 +61,7 @@ class NavBar extends React.Component {
             collection_id: row.id
           });
         }
-        if (row.collection_item_type === 'Social Media' && row.social_profile_id) {
+        if (row.collection_item_type === 'SocialMediaProfile' && row.social_profile_id) {
           collectionsMap[row.id].socialProfiles.push({
             id: row.social_profile_id,
             username: row.social_profile_username,
@@ -372,7 +372,7 @@ const NavBarLinks = ({ selected, closeNavBar, onSocialProfileClick, collections 
                           cursor: 'pointer',
                           fontSize: 18,
                           padding: 0,
-                          display: 'flex',
+                          display: 'none',
                           alignItems: 'center',
                           transition: 'color 0.18s',
                         }}
@@ -443,27 +443,7 @@ const NavBarLinks = ({ selected, closeNavBar, onSocialProfileClick, collections 
                         </span>
                       )}
                     </div>
-                    <button
-                      style={{
-                        marginLeft: 'auto',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        padding: 0,
-                        display: 'flex',
-                        alignItems: 'center',
-                        fontSize: 18
-                      }}
-                      title="Add to Folder"
-                      onClick={e => {
-                        e.stopPropagation();
-                        if (window.openMoveToFolderModal) {
-                          window.openMoveToFolderModal(profile, 'profile', collections);
-                        }
-                      }}
-                    >
-                      <i className="fa fa-plus-circle" style={{ color: '#16a34a', fontSize: 20, filter: 'drop-shadow(0 1px 2px #bbf7d0)' }}></i>
-                    </button>
+                    {/* Plus button removed as requested */}
                   </div>
                 ))}
               </div>

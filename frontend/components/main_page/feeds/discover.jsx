@@ -1,4 +1,5 @@
 import React from 'react';
+import AssignToFolderDialog from './AssignToFolderDialog';
 import { Link } from 'react-router-dom';
 import DiscoverIndexItem from './discover_index_item';
 import AddFeedForm from './add_feed_form';
@@ -24,10 +25,18 @@ class Discover extends React.Component {
         })
       });
       if (!response.ok) throw new Error('Failed to follow profile');
-      // Optionally update UI or state here
-      // Success: update state/UI as needed, no alert
+      const marked = await response.json();
+      // Fetch collections and open dialog to assign this social profile
+      const collectionsRes = await fetch('/api/collections');
+      const collections = await collectionsRes.json();
+      this.setState({
+        showSocialDialog: true,
+        collections,
+        selectedCollectionIds: [],
+        assigningSocialProfile: marked.social_media_profile_id || (marked.social_media_profile && marked.social_media_profile.id),
+        socialError: null
+      });
     } catch (err) {
-      // Failure: optionally set error state, but do not alert
       this.setState({ socialError: 'Could not follow profile.' });
     }
   };
@@ -37,7 +46,43 @@ class Discover extends React.Component {
     socialInput: "",
     socialProfile: null,
     socialLoading: false,
-    socialError: null
+    socialError: null,
+    showSocialDialog: false,
+    collections: [],
+    selectedCollectionIds: [],
+    assigningSocialProfile: null
+  };
+  handleSocialCollectionToggle = (colId) => {
+    this.setState(prev => {
+      const selected = prev.selectedCollectionIds;
+      if (selected.includes(colId)) {
+        return { selectedCollectionIds: selected.filter(id => id !== colId) };
+      } else {
+        return { selectedCollectionIds: [...selected, colId] };
+      }
+    });
+  };
+
+  closeSocialDialog = () => {
+    this.setState({ showSocialDialog: false, selectedCollectionIds: [], assigningSocialProfile: null });
+  };
+
+  confirmAssignSocialProfile = async () => {
+    const { selectedCollectionIds, assigningSocialProfile } = this.state;
+    if (!assigningSocialProfile || selectedCollectionIds.length === 0) {
+      this.setState({ socialError: 'Please select at least one folder.' });
+      return;
+    }
+    try {
+      for (const colId of selectedCollectionIds) {
+        // itemType is 'SocialMediaProfile', itemId is the social profile id
+        await this.props.addCollectionItemAction(colId, 'SocialMediaProfile', assigningSocialProfile);
+      }
+      window.dispatchEvent(new Event('refresh-navbar-folders'));
+      this.closeSocialDialog();
+    } catch (e) {
+      this.setState({ socialError: 'Could not assign to folder.' });
+    }
   };
 
   componentDidMount() {
@@ -290,6 +335,19 @@ class Discover extends React.Component {
             feeds={feedsToShow}
           />
         </div>
+
+        {/* Social Profile Assign Dialog */}
+        {this.state.showSocialDialog && (
+          <AssignToFolderDialog
+            open={this.state.showSocialDialog}
+            collections={this.state.collections}
+            selectedCollectionIds={this.state.selectedCollectionIds}
+            onToggle={this.handleSocialCollectionToggle}
+            onCancel={this.closeSocialDialog}
+            onAssign={this.confirmAssignSocialProfile}
+            error={this.state.socialError}
+          />
+        )}
       </div>
     );
   }

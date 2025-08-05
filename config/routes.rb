@@ -25,6 +25,7 @@ Rails.application.routes.draw do
       end
     end
     resources :reads, only: [:create, :destroy, :index]
+    get 'instagram_avatar/:username', to: 'instagram_avatar#show'
     resources :social_media_markeds, only: [:index, :create]
     delete 'social_media_markeds', to: 'social_media_markeds#destroy'
   end

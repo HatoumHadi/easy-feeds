@@ -28,7 +28,7 @@ class Collection < ApplicationRecord
   scope :with_feed_and_social_media_profiles_items, -> {
     joins("JOIN collection_items ON collection_items.collection_id = collections.id")
       .joins("LEFT JOIN feeds ON collection_items.item_type = 'Feed' AND feeds.id = collection_items.item_id")
-      .joins("LEFT JOIN social_media_profiles ON collection_items.item_type = 'Social Media' AND social_media_profiles.id = collection_items.item_id")
+      .joins("LEFT JOIN social_media_profiles ON collection_items.item_type = 'SocialMediaProfile' AND social_media_profiles.id = collection_items.item_id")
       .select(<<-SQL.squish)
         collections.*, 
         collection_items.id as collection_item_id, 
