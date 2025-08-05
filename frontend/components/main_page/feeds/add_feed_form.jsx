@@ -5,7 +5,14 @@ export class AddFeedForm extends React.Component {
 
   handleSubmit = (e) => {
     e.preventDefault();
-    this.props.createFeed(this.state);
+    this.props.createFeedOnly(this.state)
+      .then(() => {
+        // Clear input and refresh popular feeds after successful add
+        this.setState({ rss_url: "" });
+        if (this.props.fetchFeedResults) {
+          this.props.fetchFeedResults("");
+        }
+      });
   }
 
   render() {

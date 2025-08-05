@@ -39,3 +39,12 @@ export const createFeed = feed => (
     data: { subscription: feed }
   })
 );
+
+// Subscribe to an existing feed by feed_id only
+export const subscribeExistingFeed = (feed_id) => (
+  $.ajax({
+    type: "POST",
+    url: "api/subscriptions/subscribe_existing_feed",
+    data: { feed_id }
+  })
+);

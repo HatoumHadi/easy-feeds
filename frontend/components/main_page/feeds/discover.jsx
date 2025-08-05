@@ -1,8 +1,8 @@
-
 import React from 'react';
 import { Link } from 'react-router-dom';
 import DiscoverIndexItem from './discover_index_item';
 import AddFeedForm from './add_feed_form';
+// ...existing code...
 
 class Discover extends React.Component {
 
@@ -258,6 +258,14 @@ class Discover extends React.Component {
       );
     }
 
+    // Use feeds.byId and feeds.results from Redux
+    const feedsById = this.props.feeds && this.props.feeds.byId ? this.props.feeds.byId : {};
+    const feedIds = this.props.feeds && this.props.feeds.results ? this.props.feeds.results : Object.keys(feedsById);
+    // Compose the feeds to show in order
+    const feedsToShow = {};
+    feedIds.forEach(id => {
+      if (feedsById[id]) feedsToShow[id] = feedsById[id];
+    });
     return(
       <div className="discover-search-index">
         <DiscoverFormSwitch
@@ -277,7 +285,10 @@ class Discover extends React.Component {
 
         <div className="discover-items">
           <h2>{text}</h2>
-          <DiscoverIndexItems {...this.props} />
+          <DiscoverIndexItems
+            {...this.props}
+            feeds={feedsToShow}
+          />
         </div>
       </div>
     );
@@ -336,17 +347,25 @@ function DataBaseSearch({ query, handleQueryChange }) {
   );
 }
 
-function DiscoverIndexItems({ feeds, ...feedActions }) {
-  const results = feeds.results.length === 0 ?
-    ["No Feeds Found"] :
-    feeds.results.map(resultId =>
-      <DiscoverIndexItem key={resultId} feed={feeds.byId[resultId]} {...feedActions} />
-    );
-
+function DiscoverIndexItems(props) {
+  // Filter out feeds with no title or rss_url (prevents empty rows and backend errors)
+  const validFeeds = Object.entries(props.feeds).filter(
+    ([, feed]) => feed && feed.title && feed.rss_url
+  );
   return (
-    <div className="results">
-      {results}
-    </div>
+    <>
+      {validFeeds.map(([feedId, feed]) => (
+        <DiscoverIndexItem
+          key={feedId}
+          feed={feed}
+          deleteFeed={props.deleteFeed}
+          createFeedOnly={props.createFeedOnly}
+          addCollectionItemAction={props.addCollectionItemAction}
+          subscribeExistingFeed={props.subscribeExistingFeed}
+          removeFeedFromAllCollections={props.removeFeedFromAllCollections}
+        />
+      ))}
+    </>
   );
 }
 

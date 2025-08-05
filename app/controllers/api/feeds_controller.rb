@@ -1,6 +1,30 @@
 class Api::FeedsController < ApplicationController
   before_action :require_login
 
+  # DELETE /api/feeds/:id/remove_from_collections
+  def remove_from_collections
+    feed_id = params[:id]
+    removed = CollectionItem.where(item_type: 'Feed', item_id: feed_id).destroy_all
+    render json: { success: true, removed_count: removed.size }
+  end
+
+  # POST /api/feeds
+  def create
+    @feed = Feed.find_by(rss_url: feed_params[:rss_url])
+    if @feed
+      render json: @feed, status: :ok
+      return
+    end
+
+    @feed = Feed.new(feed_params)
+    if @feed.save
+      # Optionally, populate stories if your Feed model does this automatically
+      render json: @feed, status: :created
+    else
+      render json: { errors: @feed.errors.full_messages }, status: :unprocessable_entity
+    end
+  end
+
   def index
     sql_join = "LEFT OUTER JOIN subscriptions
     ON subscriptions.feed_id = feeds.id

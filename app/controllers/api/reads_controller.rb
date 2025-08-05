@@ -19,16 +19,30 @@ class Api::ReadsController < ApplicationController
       story_id: read_params[:story_id],
       reader_id: current_user.id
     )
-
-    if @read.save
-      @story = Story
-        .select("stories.*, reads.reader_id as read")
-        .joins(reads_join)
-        .includes(:feed, :subscriptions)
-        .find_by(id: read_params[:story_id])
-      render "api/stories/show"
-    else
-      render json: @read.errors.full_messages, status: 422
+    begin
+      if @read.save
+        @story = Story
+          .select("stories.*, reads.reader_id as read")
+          .joins(reads_join)
+          .includes(:feed, :subscriptions)
+          .find_by(id: read_params[:story_id])
+        render "api/stories/show"
+      else
+        render json: @read.errors.full_messages, status: 422
+      end
+    rescue ActiveRecord::RecordNotUnique
+      # Already marked as read, return success (idempotent)
+      existing = Read.find_by(reader_id: current_user.id, story_id: read_params[:story_id])
+      if existing
+        @story = Story
+          .select("stories.*, reads.reader_id as read")
+          .joins(reads_join)
+          .includes(:feed, :subscriptions)
+          .find_by(id: read_params[:story_id])
+        render "api/stories/show"
+      else
+        render json: ["Could not mark as read"], status: 422
+      end
     end
   end
 

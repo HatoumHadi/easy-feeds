@@ -1,7 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+// ...existing code...
 
-function DiscoverIndexItem({ feed, deleteFeed, createFeed }) {
+function DiscoverIndexItem({ feed, deleteFeed, addCollectionItemAction, subscribeExistingFeed, removeFeedFromAllCollections }) {
   return (
     <div key={feed.id} className="search-item">
       <div className="feed-search-name">
@@ -15,8 +16,8 @@ function DiscoverIndexItem({ feed, deleteFeed, createFeed }) {
       </div>
       <div>
         {feed.subscribed ?
-          <UnsubscribeButton {...{feed, deleteFeed}} /> :
-          <SubscribeButton {...{feed, createFeed}} />
+          <UnsubscribeButton {...{feed, deleteFeed, removeFeedFromAllCollections}} /> :
+          <SubscribeButton {...{feed, addCollectionItemAction, subscribeExistingFeed}} />
           }
         </div>
       </div>
@@ -26,12 +27,27 @@ function DiscoverIndexItem({ feed, deleteFeed, createFeed }) {
 class UnsubscribeButton extends React.Component {
   state = { hovering: false };
 
+  handleUnfollow = async (e) => {
+    e.preventDefault();
+    const { feed, removeFeedFromAllCollections, deleteFeed } = this.props;
+    if (removeFeedFromAllCollections) {
+      await removeFeedFromAllCollections(feed.id);
+    }
+    if (deleteFeed) {
+      deleteFeed(feed);
+    }
+    // Always update the folder section after unfollow
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('refresh-navbar-folders'));
+    }
+  };
+
   render() {
     return (
       <button className="following-button discover-button"
         onMouseOver={e => this.setState({hovering: true})}
         onMouseLeave={e => this.setState({hovering: false})}
-        onClick={e => this.props.deleteFeed(this.props.feed)}
+        onClick={this.handleUnfollow}
       >
         { this.state.hovering ? "Unfollow?" : "Following" }
       </button>
@@ -117,24 +133,30 @@ class SubscribeButton extends React.Component {
     }
   };
 
-  confirmFollow = () => {
-    // Call your createFeed as before
-    this.props.createFeed(this.props.feed);
-    // Call the add_item endpoint for each selected collection
-    this.state.selectedCollectionIds.forEach(colId => {
-      fetch(`/api/collections/${colId}/add_items`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          item_type: 'Feed',
-          item_id: this.props.feed.id
-        })
+  confirmFollow = async () => {
+    // Require at least one folder selection
+    if (this.state.selectedCollectionIds.length === 0) {
+      this.setState({ createError: 'Please select at least one folder.' });
+      return;
+    }
+    const { feed, addCollectionItemAction, subscribeExistingFeed } = this.props;
+    let feedId = feed.id;
+    try {
+      await subscribeExistingFeed(feedId);
+      // Add to selected collections
+      this.state.selectedCollectionIds.forEach(colId => {
+        addCollectionItemAction(colId, 'Feed', feedId);
       });
-    });
-    this.closeDialog();
+      // Dispatch custom event to update folders in NavBar
+      window.dispatchEvent(new Event('refresh-navbar-folders'));
+      this.closeDialog();
+    } catch (e) {
+      this.setState({ createError: 'Could not follow feed.' });
+    }
   };
 
   render() {
+    const { createError } = this.state;
     return (
       <>
         <button
@@ -152,6 +174,9 @@ class SubscribeButton extends React.Component {
               background: '#fff', borderRadius: 10, padding: 32, minWidth: 340, boxShadow: '0 4px 24px rgba(0,0,0,0.18)'
             }}>
               <h2 style={{marginTop:0, marginBottom:16}}>Select Folder</h2>
+              {createError && (
+                <div style={{ color: '#d32f2f', fontSize: 15, marginBottom: 10 }}>{createError}</div>
+              )}
               {this.state.loading ? (
                 <div>Loading folders...</div>
               ) : (
@@ -161,19 +186,19 @@ class SubscribeButton extends React.Component {
                     {this.state.collections.map(col => {
                       const selected = this.state.selectedCollectionIds.includes(col.id);
                       return (
-                        <div key={col.id} style={{display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #f0f0f0'}}>
-                          <span style={{fontSize:16, color:'#222'}}>{col.name}</span>
-                          <button
-                            style={{
-                              padding:'6px 16px', borderRadius:6, border: selected ? '2px solid #219653' : '1px solid #ccc',
-                              background: selected ? '#eafaf1' : '#f5f5f5',
-                              color: selected ? '#219653' : '#333', fontWeight:600, fontSize:15, cursor:'pointer'
-                            }}
-                            onClick={() => this.handleCollectionToggle(col.id)}
-                          >
-                            {selected ? 'Selected' : 'Select'}
-                          </button>
-                        </div>
+                        <label key={col.id} style={{
+                          display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid #f0f0f0', cursor:'pointer',
+                          background: selected ? '#f3fafd' : 'transparent', borderRadius: selected ? 6 : 0, transition:'background 0.2s'
+                        }}>
+                          <span style={{fontSize:16, color:'#222', flex:1}}>{col.name}</span>
+                          <input
+                            type="checkbox"
+                            checked={selected}
+                            onChange={() => this.handleCollectionToggle(col.id)}
+                            style={{width:20, height:20, accentColor:'#1976d2', marginLeft:12, cursor:'pointer'}}
+                            aria-label={selected ? `Deselect ${col.name}` : `Select ${col.name}`}
+                          />
+                        </label>
                       );
                     })}
                   </div>

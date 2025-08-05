@@ -13,22 +13,35 @@ const feedsById = (state = {}, action) => {
 
   switch (action.type) {
     case RECEIVE_FEEDS_RESULTS:
-      newState = merge({}, state, action.feeds.byId);
+      // Accept both normalized (byId) and flat object
+      if (action.feeds && action.feeds.byId) {
+        newState = merge({}, state, action.feeds.byId);
+      } else {
+        newState = merge({}, state, action.feeds);
+      }
       return newState;
     case RECEIVE_NEW_FEED:
     case RECEIVE_ALL_SUBSCRIPTIONS:
     case REMOVE_FEED:
     case RECEIVE_LATEST:
     case RECEIVE_READS:
-      newState = merge({}, state, action.feeds.byId, action.subscriptions.byId);
+      if (action.feeds && action.feeds.byId) {
+        newState = merge({}, state, action.feeds.byId, action.subscriptions && action.subscriptions.byId);
+      } else {
+        newState = merge({}, state, action.feeds, action.subscriptions);
+      }
       return newState;
     case RECEIVE_SINGLE_FEED:
-      const feedId = action.feeds.allIds[0];
-      const prevStories = state[feedId] ? state[feedId].stories : [];
-      const allStories = union(prevStories, action.feeds.byId[feedId].stories);
-      newState = merge({}, state, action.feeds.byId, action.subscriptions.byId);
-      newState[feedId].stories = allStories;
-      return newState;
+      if (action.feeds && action.feeds.allIds && action.feeds.byId) {
+        const feedId = action.feeds.allIds[0];
+        const prevStories = state[feedId] ? state[feedId].stories : [];
+        const allStories = union(prevStories, action.feeds.byId[feedId].stories);
+        newState = merge({}, state, action.feeds.byId, action.subscriptions && action.subscriptions.byId);
+        newState[feedId].stories = allStories;
+        return newState;
+      } else {
+        return state;
+      }
     case CLEAR_ENTITIES:
       return {};
     default:

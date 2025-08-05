@@ -1,16 +1,37 @@
 class Api::SubscriptionsController < ApplicationController
   before_action :require_login
 
+    # POST /api/subscriptions/subscribe_existing_feed
+  def subscribe_existing_feed
+    feed_id = params[:feed_id]
+    feed = Feed.find_by(id: feed_id)
+    unless feed
+      render json: ["Feed not found."], status: 404 and return
+    end
+    # Check if already subscribed
+    existing = current_user.subscriptions.find_by(feed_id: feed.id)
+    if existing
+      render json: ["Already subscribed."], status: 422 and return
+    end
+    subscription = current_user.subscriptions.build(feed_id: feed.id)
+    if subscription.save
+      @subscription = subscription
+      render :show
+    else
+      render json: subscription.errors.full_messages, status: 422
+    end
+  end
+
   def index
     @subscriptions ||= current_user.subscriptions.includes(:feed)
   end
 
   def show
-    @subscription ||= current_user.subscription_by_feed(params[:id])
+    @subscription = current_user.subscription_by_feed(params[:id])
     if @subscription
       render :show
     else
-      render json: ["You do not have access to this subscription."], status: 403
+      render json: ["Subscription not found."], status: 404
     end
   end
 

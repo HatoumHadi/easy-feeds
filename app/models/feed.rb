@@ -12,8 +12,8 @@ class Feed < ApplicationRecord
     'tiktok.com', 'threads.net', 'reddit.com', 'whatsapp.com', 'github.com'
   ]
 
-  serialize :social_links, Array
-  serialize :website_links, Array
+  # Removed serialize :social_links, Array -- PostgreSQL array columns are natively serialized
+  # Removed serialize :website_links, Array -- PostgreSQL array columns are natively serialized
 
   validates :rss_url, presence: true
 

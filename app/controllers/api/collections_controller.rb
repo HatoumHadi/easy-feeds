@@ -23,6 +23,27 @@ class Api::CollectionsController < ApplicationController
     end
   end
 
+  # POST /api/collections/:id/remove_item
+  def remove_item
+    collection = Collection.find(params[:id])
+    item_type = params[:item_type]
+    item_id = params[:item_id]
+
+    case item_type
+    when 'feed', 'Feed'
+      collection_item = collection.collection_items.find_by(item_type: 'Feed', item_id: item_id)
+    when 'profile', 'social_profile', 'social media', 'SocialMediaProfile'
+      collection_item = collection.collection_items.find_by(item_type: 'SocialMediaProfile', item_id: item_id)
+    else
+      render json: { error: 'Invalid item_type' }, status: :unprocessable_entity and return
+    end
+
+    if collection_item&.destroy
+      render json: { success: true }
+    else
+      render json: { error: 'Could not remove item' }, status: :unprocessable_entity
+    end
+  end
   # Add an item to an existing collection
   def add_items
     collection = Collection.find(params[:id])
@@ -49,9 +70,16 @@ class Api::CollectionsController < ApplicationController
   end
 
 
+
   # List all collections for the current user
   def index
     collections = Collection.where(creator_id: current_user.id)
+    render json: collections
+  end
+
+  # List all collections with their feed and social media profile items for the current user
+  def with_feeds_and_social_media_profiles
+    collections = Collection.with_feed_and_social_media_profiles_items.where(creator_id: current_user.id)
     render json: collections
   end
 

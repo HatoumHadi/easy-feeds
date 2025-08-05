@@ -1,4 +1,5 @@
 import * as SubscriptionApiUtil from '../util/subscription_api_util';
+import * as FeedApiUtil from '../util/feed_api_util';
 import { startFeedAction } from './loading_actions';
 
 export const REMOVE_FEED = 'REMOVE_FEED';
@@ -80,4 +81,37 @@ export const createFeed = feed => dispatch => {
       newFeed => dispatch(receiveNewFeed(newFeed)),
       errors => dispatch(receiveSubscriptionErrors(errors.responseJSON)))
   );
+};
+
+export const createFeedOnly = feed => dispatch => {
+  dispatch(startFeedAction(["Adding Feed..."]));
+  return FeedApiUtil.createFeedOnly(feed)
+    .then(
+      result => {
+        dispatch(receiveNewFeed({
+          feeds: { [result.id]: result },
+          stories: result.stories || {}
+        }));
+        // Refresh popular feeds after success
+        if (typeof dispatch.fetchFeedResults === 'function') {
+          dispatch.fetchFeedResults("");
+        }
+        dispatch(startFeedAction([]));
+        return result;
+      },
+      errors => {
+        dispatch(receiveSubscriptionErrors(errors.responseJSON));
+        dispatch(startFeedAction([]));
+        throw errors;
+      }
+    );
+};
+
+// Subscribe to an existing feed (by feed_id only)
+export const subscribeExistingFeed = (feed_id) => dispatch => {
+  return SubscriptionApiUtil.subscribeExistingFeed(feed_id)
+    .then(
+      payload => dispatch(receiveNewFeed(payload)),
+      errors => dispatch(receiveSubscriptionErrors(errors.responseJSON))
+    );
 };
